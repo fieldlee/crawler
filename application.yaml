@@ -1,0 +1,35 @@
+#debug模式，true输出控制台日志，false只输出文件日志.生产环境需要关闭debug，rbatis也需移除"debug_mode"
+debug: true
+is_demo: true
+#名称
+server_name: "commerce_services"
+#缓存介质类型,"redis"
+cache_type: "redis"
+#JwtToken秘钥
+api_key: "AIzaSyC5b5cvkah01P5neWANNnBdhCxeMhs4iEU"
+#redis地址(cache_type为“redis”时有效)
+redis_url: "redis://:password@127.0.0.1:6379/0"
+#数据库地址
+database_url: "mysql://root:password@localhost:3306/commerce"
+#逻辑删除字段
+logic_column: "del"
+logic_un_deleted: 0
+logic_deleted: 1
+#日志文件存放目录
+log_dir: "target/logs/"
+#日志分割尺寸-单位KB,MB,GB
+log_temp_size: "100MB"
+#日志打包格式可选“”（空-不压缩）“gzip”（gz压缩包）“zip”（zip压缩包）“lz4”（lz4压缩包（非常快））
+log_pack_compress: "zip"
+#日志滚动保留-保留全部: All,按时间保留(秒): KeepTime(i64),按版本保留: KeepNum(i64)
+log_rolling_type: "KeepNum(20)"
+#日志等级-info,error,warn,debug,trace
+log_level: "info"
+#上传默认实现
+upload_type: "OSS"
+oss:
+  key_id: "LTAI5tARCXTX2k7zHw3o7JqW"
+  key_secret: "ap2FgB9cKPq3e2Ot59IlIULRYrScYY"
+  endpoint: "oss-cn-beijing.aliyuncs.com"
+  bucket: "rivet"
+  access_endpoint: "http://rivet.oss-cn-beijing.aliyuncs.com"

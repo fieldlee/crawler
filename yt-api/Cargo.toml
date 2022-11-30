@@ -1,0 +1,37 @@
+[package]
+name = "yt-api"
+version = "0.3.2"
+description = "a work in progress library to interact asynchronously with the youtube api"
+repository = "https://codeberg.org/nycex/yt-api"
+documentation = "https://docs.rs/yt-api"
+keywords = ["youtube", "api", "async"]
+categories = ["api-bindings", "asynchronous"]
+readme = "README.md"
+license = "MIT"
+authors = ["fdangelo <fdangelo@redhat.com>", "nycex <nycex@cccp.org>"]
+edition = "2018"
+
+[lib]
+path = "src/lib.rs"
+
+[features]
+default = ["surf/default"]
+curl-client = ["surf/curl-client"]
+h1-client = ["surf/h1-client"]
+h1-client-rustls = ["surf/h1-client-rustls"]
+hyper-client = ["surf/hyper-client"]
+wasm-client = ["surf/wasm-client"]
+middleware-logger = ["surf/middleware-logger"]
+
+[dependencies]
+snafu = "0.6.10"
+serde = { version = "1.0.124", features = [ "derive" ] }
+serde_urlencoded = "0.7.0"
+serde_json = "1.0.64"
+log = "0.4.14"
+chrono = { version = "0.4.19", features = [ "serde" ] }
+surf = { version = "2.2.0", default-features = false }
+futures = "0.3.13"
+
+[badges]
+maintenance = { status = "deprecated" }
