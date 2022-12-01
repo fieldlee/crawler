@@ -49,6 +49,8 @@ struct FormatsDataInfo {
 struct VideoDetailsInfo {
   #[serde(rename = "videoId")]
   video_id:Option<String>,
+  #[serde(rename = "lengthSeconds")]
+  length_seconds:Option<String>,
   title:Option<String>,
   #[serde(rename = "channelId")]
   channel_id:Option<String>,
