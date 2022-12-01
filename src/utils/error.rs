@@ -68,12 +68,6 @@ impl From< reqwest::Error> for Error {
     }
 }
 
-impl From< rustube::Error> for Error {
-    fn from(arg: rustube::Error) -> Self {
-        return Error::E(arg.to_string());
-    }
-}
-
 impl From< yt_api::search::Error> for Error {
     fn from(arg: yt_api::search::Error) -> Self {
         return Error::E(arg.to_string());

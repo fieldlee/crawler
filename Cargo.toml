@@ -38,9 +38,8 @@ random-number = "0.1.8"
 cron = "0.12.0"
 thirtyfour = "0.31.0"
 reqwest = { version = "0.11.10", features = ["json", "blocking"] }
-tinyjson = "2"
 yt-api = { path = "./yt-api" }
-rustube = "0.6.0"
+tinyjson = "*"
 
 [dev-dependencies]
 tokio-test = "0.4.2"
