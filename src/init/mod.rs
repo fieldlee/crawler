@@ -13,6 +13,7 @@ use yt_api::ApiKey;
 use crate::cache::cache::{CacheService};
 use crate::services::crawler_service::{CrawlerService};
 use crate::services::ytb_service::{YTBService};
+use crate::services::ytb_dl_service::{YTBDLService};
 //初始化配置信息
 pub async fn init_config() {
     let content = read_to_string("application.yaml").await.unwrap();
@@ -114,6 +115,9 @@ pub async fn init_service() {
 
     APPLICATION_CONTEXT.set::<YTBService>(YTBService::default());
     info!("YTBService init success!");
+
+    APPLICATION_CONTEXT.set::<YTBDLService>(YTBDLService::default());
+    info!("YTBDLService init success!");
 
     APPLICATION_CONTEXT.set::<ApiKey>(ApiKey::new(config.api_key()));
     info!("ApiKey init success!");

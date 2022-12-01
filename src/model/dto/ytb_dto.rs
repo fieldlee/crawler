@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use rbatis::DateTimeNative;
-use crate::model::entitys::ytb_entity::YtbInfo;
+use crate::model::entitys::ytb_entity::{YtbInfo,YtbDownload};
 
 #[derive(Clone, Debug, Serialize, Deserialize, Getters, Setters, Default)]
 #[getset(get = "pub", set = "pub")]
@@ -68,6 +68,51 @@ impl From<YtbInfo> for YtbDTO {
             is_public: arg.is_public,
             created_at: arg.created_at,
             updated_at: arg.updated_at,
+        }
+    }
+}
+
+
+
+#[derive(Clone, Debug, Serialize, Deserialize, Getters, Setters, Default)]
+#[getset(get = "pub", set = "pub")]
+pub struct YtbDownloadDTO {
+    pub id: Option<i64>,
+    pub ytb_id: Option<String>,
+    pub ytb_middle_url: Option<String>,
+    pub ytb_high_url: Option<String>,
+    pub file_name: Option<String>,
+    pub file_path: Option<String>,
+    pub is_download: Option<i8>,
+    pub created_at:Option<DateTimeNative>,
+}
+
+impl Into<YtbDownload> for YtbDownloadDTO {
+    fn into(self) -> YtbDownload {
+        YtbDownload {
+            id: self.id().clone(),
+            ytb_id: self.ytb_id().clone(),
+            ytb_middle_url: self.ytb_middle_url().clone(),
+            ytb_high_url: self.ytb_high_url().clone(),
+            file_name: self.file_name().clone(),
+            file_path: self.file_path().clone(),
+            is_download: self.is_download().clone(),
+            created_at:self.created_at().clone(),
+        }
+    }
+}
+
+impl From<YtbDownload> for YtbDownloadDTO {
+    fn from(arg: YtbDownload) -> Self {
+        Self {
+            id: arg.id,
+            ytb_id: arg.ytb_id,
+            ytb_middle_url: arg.ytb_middle_url,
+            ytb_high_url: arg.ytb_high_url,
+            file_name: arg.file_name,
+            file_path: arg.file_path,
+            is_download: arg.is_download,
+            created_at:arg.created_at,
         }
     }
 }

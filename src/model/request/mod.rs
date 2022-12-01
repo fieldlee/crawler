@@ -19,3 +19,9 @@ pub struct YtbNoResultQuery {
 pub struct CrawlerQuery {
     
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, Getters, Setters, Default)]
+#[getset(get = "pub", set = "pub")]
+pub struct YtbDlQuery {
+    
+}

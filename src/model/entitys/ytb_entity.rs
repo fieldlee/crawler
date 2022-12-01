@@ -41,3 +41,28 @@ impl_field_name_method!(YtbInfo {
     created_at,
     updated_at,
 });
+
+
+#[crud_table(table_name:ytb_dl)]
+#[derive(Clone, Debug,Default)]
+pub struct YtbDownload { 
+    pub id: Option<i64>,
+    pub ytb_id: Option<String>,
+    pub ytb_middle_url: Option<String>,
+    pub ytb_high_url: Option<String>,
+    pub file_name: Option<String>,
+    pub file_path: Option<String>,
+    pub is_download: Option<i8>,
+    pub created_at:Option<DateTimeNative>,
+}
+
+impl_field_name_method!(YtbDownload {
+    id,
+    ytb_id,
+    ytb_middle_url,
+    ytb_high_url,
+    file_name,
+    file_path,
+    is_download,
+    created_at,
+});
