@@ -9,33 +9,9 @@ use reqwest::header::HeaderMap;
 use crate::model::dto::ytb_dto::YtbDownloadDTO;
 use crate::crawler::{YtbPlayerInfo,ReqBody};
 use serde_json::json;
+use downloader::Downloader;
 
 static YOUTUBE_DOWNLOAD_URL: &'static str = "https://www.youtube.com/youtubei/v1/player";
-
-pub async fn download_ytb_info_async()->Result<()>{
-    let ytb_service = APPLICATION_CONTEXT.get::<YTBService>();
-    loop {
-        //获得未爬成功的视频
-        let ytb_list = ytb_service.get_by_ytb_no_status_list_5(1).await?;
-
-        for mut ytb_info in ytb_list{
-            // 同步执行下载
-            tokio::spawn(async move{
-                // let ytb_link = ytb_info.ytb_link();
-                
-
-                // ytb_info.set_ytb_author(Some(author));
-                // ytb_info.set_status(Some(1));
-                // ytb_info.set_times(Some(ytb_info.times().unwrap()+1));
-
-                // ytb_service.save_info(ytb_info).await;
-            });
-
-        }
-    }
-    Ok(())
-}
-
 
 pub async fn get_ytb_info(vid : &str)-> Result<()>{
     let ytb_dl_service = APPLICATION_CONTEXT.get::<YTBDLService>();
@@ -130,15 +106,37 @@ pub async fn get_ytb_info(vid : &str)-> Result<()>{
 ///  */
 
 pub async fn download_ytb_video_async()->Result<()>{
-    let ytb_service = APPLICATION_CONTEXT.get::<YTBService>();
+    let ytb_dl_service = APPLICATION_CONTEXT.get::<YTBDLService>();
     loop {
         //获得未爬成功的视频
-        let ytb_list = ytb_service.get_by_ytb_no_status_list_5(1).await?;
+        let ytb_list = ytb_dl_service.get_by_ytb_no_download_list_5(0).await?;
 
-        for ytb_info in ytb_list{
+        for mut ytb_info in ytb_list{
             // 同步执行下载
             tokio::spawn(async move{
-                
+                let mid_url = ytb_info.ytb_middle_url().clone().unwrap();
+
+                let mut downloader = Downloader::builder()
+                .download_folder(std::path::Path::new("/tmp"))
+                .parallel_requests(1)
+                .build()
+                .unwrap();
+        
+            // Download with an explicit filename
+            let dl_file_name = format!("{}.mp4",ytb_info.ytb_id().clone().unwrap());
+            let dl = downloader::Download::new(mid_url.as_str())
+                .file_name(std::path::Path::new(dl_file_name.as_str()));
+        
+            let result = downloader.download(&[dl]).unwrap();
+            match result.get(0){
+                Some(_) => {
+                    ytb_info.set_is_download(Some(1));
+                    ytb_dl_service.save_info(ytb_info).await;
+                },
+                None=>{
+                    println!("Download error :{:?}",ytb_info);
+                }
+            }
             });
         }
     }

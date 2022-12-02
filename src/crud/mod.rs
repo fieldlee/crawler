@@ -146,11 +146,11 @@ where
         return Ok(vo);
     }
     /**
-     * ytb_id
+     * ytb_id no download five
      */
-    async fn get_by_ytb_no_status_list_5(&self, status: u8) -> Result<Vec<Dto>> {
+    async fn get_by_ytb_no_download_list_5(&self, status: u8) -> Result<Vec<Dto>> {
         let rb = APPLICATION_CONTEXT.get::<Rbatis>();
-        let wrapper = rb.new_wrapper().ne("status", status).limit(5);
+        let wrapper = rb.new_wrapper().ne("is_download", status).limit(5);
         let list: Vec<Entity> = rb.fetch_list_by_wrapper(wrapper).await?;
         let result = list
             .into_iter()
