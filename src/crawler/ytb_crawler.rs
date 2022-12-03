@@ -148,8 +148,10 @@ pub async fn ytb_crawler()->Result<()>{
  ///  */
 
  pub async fn ytb_crawler_youtube3(key_word: &str) -> Result<i32>{
+    println!("ytb_crawler_youtube3  key_word:{} ",key_word);
     let key = APPLICATION_CONTEXT.get::<ApiKey>();
     let mut crawler_num = 0;
+    println!("SearchList Key:{:?} ",key);
     let mut result = SearchList::new(key.clone())
         .q(key_word)
         .item_type(ItemType::Video)

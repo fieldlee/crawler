@@ -28,7 +28,9 @@ pub mod crawler;
 
 use log::info;
 use state::Container;
-use crawler::ytb_crawler::ytb_crawler_swas;
+use crawler::ytb_crawler::ytb_crawler_youtube3;
+use crawler::ytb_download::get_ytb_info;
+use crawler::ytb_download::download_ytb_video_async;
 use utils::error::Result;
 use crate::services::crawler_service::CrawlerService;
 /*
@@ -77,11 +79,24 @@ pub async fn init_context() {
 }
 
 pub async fn start_crawler() -> Result<()> {
-    let result  = ytb_crawler_swas().await?;
+    let result  = ytb_crawler_youtube3("美女").await?;
+
+    Ok(())
+}
+
+pub async fn start_get_ytb_info() -> Result<()> {
+    let list = vec!["Mbz7wvVdT2E","l2SxVulhgmA","204klcjBia0","_7DbZ4PC90g","j_FZdnts2fE"];
+    for item in list{
+        let result  = get_ytb_info(item).await?;
+    }
     Ok(())
 }
 
 
+pub async fn start_download() -> Result<()> {
+    let result  = download_ytb_video_async().await?;
+    Ok(())
+}
 
 fn print_banner() {
     let banner = r#"

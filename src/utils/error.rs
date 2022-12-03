@@ -80,11 +80,6 @@ impl From<rbatis::core::Error> for Error {
     }
 }
 
-impl From<downloader::Error> for Error {
-    fn from(arg: downloader::Error) -> Self {
-        Error::E(arg.to_string())
-    }
-}
 
 impl From<serde_json::Error> for Error {
     fn from(arg: serde_json::Error) -> Self {

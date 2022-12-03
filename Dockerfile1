@@ -1,0 +1,6 @@
+FROM ubuntu:latest
+COPY ./target/release/crawler ./crawler
+COPY ./application.yaml ./application.yaml
+# 声明服务运行在8080端口
+EXPOSE 8080
+CMD ["/bin/sh crawler"]

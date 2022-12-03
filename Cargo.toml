@@ -4,9 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-
-
 [dependencies]
 tokio = {version = "1.21.2",features = ["full"] }
 serde = "1.0.148"
@@ -37,10 +34,18 @@ base64 = "0.13.1"
 random-number = "0.1.8"
 cron = "0.12.0"
 thirtyfour = "0.31.0"
-reqwest = { version = "0.11.10", features = ["json", "blocking"] }
+reqwest = { version = "0.11.10", features = ["json", "blocking","stream"] }
 yt-api = { path = "./yt-api" }
 tinyjson = "*"
-downloader = "0.2.6"
+hyper="0.14.23"
+futures-util = "0.3.25"
 
 [dev-dependencies]
 tokio-test = "0.4.2"
+
+
+[profile.release]
+codegen-units = 1
+incremental = true
+lto = true
+opt-level = 'z' # Optimize for size
