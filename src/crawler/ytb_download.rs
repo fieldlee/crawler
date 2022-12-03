@@ -15,6 +15,7 @@ static YOUTUBE_DOWNLOAD_URL: &'static str = "https://www.youtube.com/youtubei/v1
 
 pub async fn get_ytb_info(vid : &str)-> Result<()>{
     let ytb_dl_service = APPLICATION_CONTEXT.get::<YTBDLService>();
+    
     let ytb_service = APPLICATION_CONTEXT.get::<YTBService>();
 
     let client = reqwest::Client::new();
@@ -110,35 +111,45 @@ pub async fn download_ytb_video_async()->Result<()>{
     loop {
         //获得未爬成功的视频
         let ytb_list = ytb_dl_service.get_by_ytb_no_download_list_5(0).await?;
-
-        for mut ytb_info in ytb_list{
-            // 同步执行下载
-            tokio::spawn(async move{
-                let mid_url = ytb_info.ytb_middle_url().clone().unwrap();
-
-                let mut downloader = Downloader::builder()
-                .download_folder(std::path::Path::new("/tmp"))
-                .parallel_requests(1)
-                .build()
-                .unwrap();
-        
-            // Download with an explicit filename
+        let mut dl_list = vec![];
+        // downloader 对象
+        let mut downloader = Downloader::builder()
+        .download_folder(std::path::Path::new("/tmp"))
+        .parallel_requests(1)
+        .build()
+        .unwrap();
+        // 拿到需要下载的url 组成下载列表
+        for ytb_info in ytb_list {
+            let mid_url = ytb_info.ytb_middle_url().clone().unwrap();
             let dl_file_name = format!("{}.mp4",ytb_info.ytb_id().clone().unwrap());
             let dl = downloader::Download::new(mid_url.as_str())
                 .file_name(std::path::Path::new(dl_file_name.as_str()));
-        
-            let result = downloader.download(&[dl]).unwrap();
-            match result.get(0){
-                Some(_) => {
-                    ytb_info.set_is_download(Some(1));
-                    ytb_dl_service.save_info(ytb_info).await;
+            dl_list.push(dl);
+        }
+
+        let dl_result_list = downloader.download(&dl_list).unwrap();
+        for dl_item in dl_result_list {
+            match dl_item{
+                Ok(item) => {
+                    let file_name = item.file_name.file_name().unwrap();
+                    if  file_name.to_string_lossy().ends_with(".mp4") {
+                        // 根据文件id查询 youtube 视频记录，修改是否下载的状态
+                        let file_id = file_name.to_string_lossy().replace(".mp4","");
+                        let mut ytb_dl_info = ytb_dl_service.get_by_ytb_id(file_id.clone()).await?;
+                        ytb_dl_info.set_is_download(Some(1));
+                        ytb_dl_info.set_file_path(Some(file_name.to_string_lossy().to_string()));
+                        let result = ytb_dl_service.save_info(ytb_dl_info).await?;
+                        println!("{:?} download result :{:?}",file_id, result);
+                    }
+                    // ytb_info.set_is_download(Some(1));
+                    // ytb_dl_service.save_info(ytb_info).await;
                 },
-                None=>{
-                    println!("Download error :{:?}",ytb_info);
+                Err(e)=>{
+                    println!("Download error : {:?}",e);
                 }
             }
-            });
         }
+            
     }
     Ok(())
 }
