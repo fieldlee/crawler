@@ -731,7 +731,6 @@ dependencies = [
  "futures-util",
  "getset",
  "hyper",
- "lazy_static",
  "log",
  "md5",
  "random-number",

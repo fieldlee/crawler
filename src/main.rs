@@ -11,7 +11,7 @@ async fn main() {
     //初始化上环境下文
     init_context().await;
 
-    let _result = start_download().await;
+    let _result = start_get_ytb_info().await;
     
 }
 

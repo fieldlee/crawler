@@ -1,4 +1,5 @@
 use crate::config::config::ApplicationConfig;
+use crate::crawler::ytb_download_lib::download;
 use crate::crawler::{ReqBody, YtbPlayerInfo};
 use crate::crud::CrudService;
 use crate::model::dto::ytb_dto::YtbDownloadDTO;
@@ -6,11 +7,10 @@ use crate::services::ytb_dl_service::YTBDLService;
 use crate::services::ytb_service::YTBService;
 use crate::utils::error::Result;
 use crate::APPLICATION_CONTEXT;
-use crate::crawler::ytb_download_lib::download;
 use rbatis::DateTimeNative;
 use reqwest::header::HeaderMap;
 use serde_json::json;
-use tokio::{self,spawn, runtime::Runtime};
+use tokio::{self, spawn};
 
 static YOUTUBE_DOWNLOAD_URL: &'static str = "https://www.youtube.com/youtubei/v1/player";
 
@@ -90,21 +90,33 @@ pub async fn get_ytb_info(vid: &str) -> Result<()> {
     ytb_dl_info.set_file_name(Some("".to_string()));
     ytb_dl_info.set_file_path(Some("".to_string()));
     // 保存下载的视频地址
-    ytb_dl_service.save_info(ytb_dl_info).await?;
+    let ytb_dl_save = ytb_dl_service.save_info(ytb_dl_info).await;
+
+    match ytb_dl_save {
+        Ok(_) => (),
+        Err(e) => println!("ytb_dl_save error:{:?}", e),
+    }
 
     match ytb_play_info.video_details {
         Some(video_detail) => {
             // let video_detail = ytb_play_info.video_details.unwrap();
-            let mut ytb_info = ytb_service.get_by_ytb_id(vid.to_string()).await?;
-
-            // println!("ytb_info:{:?}", ytb_info);
-
-            ytb_info.set_ytb_channel(video_detail.channel_id);
-            ytb_info.set_ytb_duration(video_detail.length_seconds);
-            ytb_info.set_ytb_author(video_detail.author);
-            ytb_info.set_ytb_tips(video_detail.short_description);
-            // 更新下载的视频地址
-            ytb_service.save_info(ytb_info).await?;
+            let  ytb_info = ytb_service.get_by_ytb_id(vid.to_string()).await;
+            match ytb_info {
+                Ok(mut info) => {
+                    // println!("ytb_info:{:?}", ytb_info);
+                    info.set_ytb_channel(video_detail.channel_id);
+                    info.set_ytb_duration(video_detail.length_seconds);
+                    info.set_ytb_author(video_detail.author);
+                    info.set_ytb_tips(video_detail.short_description);
+                    // 更新下载的视频地址
+                    let ytb_info_save = ytb_service.save_info(info).await;
+                    match ytb_info_save {
+                        Ok(_) => (),
+                        Err(e) => println!("ytb_info_save error:{:?}", e),
+                    }
+                }
+                Err(e) => println!("{}", e),
+            }
         }
         None => {}
     }
@@ -123,26 +135,31 @@ pub async fn download_ytb_video_async() -> Result<()> {
 
     //获得未爬成功的视频
     let ytb_list = ytb_dl_service.get_by_ytb_no_download_list_5(1).await?;
-    println!("ytb_list:{:?}", ytb_list);
+
     let mut tasks_down = vec![];
     // 拿到需要下载的url 组成下载列表
-    for ytb_info in ytb_list {
-
+    for mut ytb_info in ytb_list {
         let t = spawn(async move {
-            println!("in task: {:?}", ytb_info);
             let mid_url = ytb_info.ytb_middle_url().clone().unwrap();
             let dl_file_name = format!("{}.mp4", ytb_info.ytb_id().clone().unwrap());
-            let download_result = download(mid_url,ytb_info.ytb_id().clone().unwrap()).await;
+            let download_result = download(mid_url, ytb_info.ytb_id().clone().unwrap()).await;
+            match download_result {
+                Ok(file_path) => {
+                    ytb_info.set_file_name(Some(dl_file_name.clone()));
+                    ytb_info.set_file_path(Some(file_path));
+                    ytb_info.set_is_download(Some(1));
+                    ytb_dl_service.save_info(ytb_info).await;
+                }
+                Err(e) => println!("download_result Err :{:?}", e),
+            }
         });
-
         tasks_down.push(t);
     }
 
-    println!("Launched {} tasks...", tasks_down.len());
     for task in tasks_down {
-        let () = task.await.expect("task failed");
+        let () = task.await.expect("mutil thread tasks failed to download videos");
     }
-    println!("Ready!");
+
     Ok(())
 }
 

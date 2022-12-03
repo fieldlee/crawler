@@ -4,13 +4,13 @@ use std::fs::File;
 use futures_util::StreamExt;
 
 
-pub async fn download(url: String, v_id:String)->Result<()> {
+pub async fn download(url: String, v_id:String)->Result<String> {
     let client = reqwest::Client::new();
     let resp = client.get(url).send().await?;
     let file_size = resp.content_length().unwrap();
     let file_path = format!("/Users/fieldlee/tmp/{}.mp4",v_id);
 
-    let mut file = File::create(file_path).unwrap();
+    let mut file = File::create(file_path.clone()).unwrap();
 
     let mut stream = resp.bytes_stream();
 
@@ -18,10 +18,10 @@ pub async fn download(url: String, v_id:String)->Result<()> {
         match item {
             Ok(bytes) =>{
                 file.write_all(&bytes)
-            .or(Err(format!("Error while writing to file")))?;
+            .or(Err(format!("download Error while writing to file")))?;
             }
             Err(e)=> println!("download Error :{:?}",e),
         }
     }
-    Ok(())
+    Ok(file_path)
 }

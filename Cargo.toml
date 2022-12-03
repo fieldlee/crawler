@@ -11,7 +11,6 @@ serde_derive = "1.0.148"
 serde_json = "1.0.87"
 serde_yaml = "0.9.14"
 chrono = "0.4.23"  #time and date
-lazy_static ="1.4.0"
 thread_local="1.1.4"
 rbson = "2.0"
 rbatis = { version = "3.1.16", default-features = false, features = ["mysql", "runtime-async-std-rustls"] }
@@ -39,6 +38,7 @@ yt-api = { path = "./yt-api" }
 tinyjson = "*"
 hyper="0.14.23"
 futures-util = "0.3.25"
+
 
 [dev-dependencies]
 tokio-test = "0.4.2"
