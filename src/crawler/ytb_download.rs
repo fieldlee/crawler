@@ -8,119 +8,100 @@ use crate::services::ytb_service::YTBService;
 use crate::utils::error::Result;
 use crate::APPLICATION_CONTEXT;
 use rbatis::DateTimeNative;
-use reqwest::header::HeaderMap;
 use serde_json::json;
 use tokio::{self, spawn};
 
 static YOUTUBE_DOWNLOAD_URL: &'static str = "https://www.youtube.com/youtubei/v1/player";
 
-pub async fn get_ytb_info(vid: &str) -> Result<()> {
+pub async fn get_ytb_info() -> Result<()> {
     let ytb_dl_service = APPLICATION_CONTEXT.get::<YTBDLService>();
-
     let ytb_service = APPLICATION_CONTEXT.get::<YTBService>();
 
     let client = reqwest::Client::new();
-
     let config = APPLICATION_CONTEXT.get::<ApplicationConfig>();
-    // 组装header
-    let mut headers = HeaderMap::new();
-    headers.insert("Content-Type", "application/json".parse().unwrap());
-    headers.insert("Accept-Encoding", "gzip, deflate, br".parse().unwrap());
-    headers.insert("Connection", "keep-alive".parse().unwrap());
-    headers.insert("Accept", "*/*".parse().unwrap());
-    headers.insert("X-Goog-Api-Key", config.api_key().parse().unwrap());
-    // 组装json
+
     // 组装要提交的数据
 
     let data = json!({"context":{"client":{"clientName":"WEB","clientVersion":"2.20210721.00.00"}},"videoId":""});
-
-    // println!("get_ytb_info data{:?}",data);
-
     let mut req_body: ReqBody = serde_json::from_value(data).unwrap();
+    let ytb_info_list = ytb_service.fetch_list_by_column("status", &vec!["0".to_string()]).await?;
 
-    req_body.video_id = Some(vid.to_string());
+    for mut ytb_info in ytb_info_list {
+        //每次停止1-9秒随机
+        std::thread::sleep(std::time::Duration::from_secs(crate::utils::string::random_code().parse().unwrap()));
 
-    let body = serde_json::json!(req_body);
+        let v_id = ytb_info.ytb_id().clone().unwrap();
 
-    // println!("req_body{:?}",body);
+        req_body.video_id = Some(v_id.clone());
 
-    let ytb_dw_info = client.post(format!("{}", YOUTUBE_DOWNLOAD_URL)).json(&body).send().await?;
-    println!("{:?}", ytb_dw_info.status());
-    // println!("ytb_dw_info:::{:?}",ytb_dw_info);
+        let body = serde_json::json!(req_body);
 
-    let ytb_play_info: YtbPlayerInfo = serde_json::from_value(ytb_dw_info.json().await.unwrap()).unwrap();
+        let ytb_dw_info = client.post(format!("{}", YOUTUBE_DOWNLOAD_URL)).json(&body).send().await?;
 
-    let mut hd_url: Option<String> = Some("".to_string());
-    let mut hd_w: Option<i32> = Some(0);
-    let mut hd_h: Option<i32> = Some(0);
-    let mut mid_url: Option<String> = Some("".to_string());
-    let mut mid_w: Option<i32> = Some(0);
-    let mut mid_h: Option<i32> = Some(0);
+        let ytb_play_info: YtbPlayerInfo = serde_json::from_value(ytb_dw_info.json().await.unwrap()).unwrap();
 
-    for item in ytb_play_info.streaming_data.clone() {
-        let formats = item.adaptive_formats.unwrap();
-        for adap_item in formats {
-            if adap_item.quality.is_some() {
-                if adap_item.quality.clone().unwrap() == "medium".to_string() && adap_item.mime_type.clone().unwrap().contains("mp4") {
-                    mid_url = adap_item.url.clone();
-                    mid_w = adap_item.width;
-                    mid_h = adap_item.height;
-                }
-                if adap_item.quality.unwrap().starts_with("hd") && adap_item.mime_type.unwrap().contains("mp4") {
-                    hd_url = adap_item.url;
-                    hd_w = adap_item.width;
-                    hd_h = adap_item.height;
-                }
-            }
-        }
-    }
+        let mut hd_url: Option<String> = Some("".to_string());
+        let mut hd_w: Option<i32> = Some(0);
+        let mut hd_h: Option<i32> = Some(0);
+        let mut mid_url: Option<String> = Some("".to_string());
+        let mut mid_w: Option<i32> = Some(0);
+        let mut mid_h: Option<i32> = Some(0);
 
-    let mut ytb_dl_info = YtbDownloadDTO::default();
-
-    ytb_dl_info.set_ytb_high_url(hd_url);
-    ytb_dl_info.set_ytb_high_width(hd_w);
-    ytb_dl_info.set_ytb_high_height(hd_h);
-
-    ytb_dl_info.set_ytb_middle_url(mid_url);
-    ytb_dl_info.set_ytb_mid_width(mid_w);
-    ytb_dl_info.set_ytb_mid_height(mid_h);
-    ytb_dl_info.set_ytb_id(Some(vid.to_string()));
-    ytb_dl_info.set_is_download(Some(0));
-    ytb_dl_info.set_created_at(Some(DateTimeNative::now()));
-    ytb_dl_info.set_file_name(Some("".to_string()));
-    ytb_dl_info.set_file_path(Some("".to_string()));
-    // 保存下载的视频地址
-    let ytb_dl_save = ytb_dl_service.save_info(ytb_dl_info).await;
-
-    match ytb_dl_save {
-        Ok(_) => (),
-        Err(e) => println!("ytb_dl_save error:{:?}", e),
-    }
-
-    match ytb_play_info.video_details {
-        Some(video_detail) => {
-            // let video_detail = ytb_play_info.video_details.unwrap();
-            let  ytb_info = ytb_service.get_by_ytb_id(vid.to_string()).await;
-            match ytb_info {
-                Ok(mut info) => {
-                    // println!("ytb_info:{:?}", ytb_info);
-                    info.set_ytb_channel(video_detail.channel_id);
-                    info.set_ytb_duration(video_detail.length_seconds);
-                    info.set_ytb_author(video_detail.author);
-                    info.set_ytb_tips(video_detail.short_description);
-                    // 更新下载的视频地址
-                    let ytb_info_save = ytb_service.save_info(info).await;
-                    match ytb_info_save {
-                        Ok(_) => (),
-                        Err(e) => println!("ytb_info_save error:{:?}", e),
+        for item in ytb_play_info.streaming_data.clone() {
+            let formats = item.adaptive_formats.unwrap();
+            for adap_item in formats {
+                if adap_item.quality.is_some() {
+                    if adap_item.quality.clone().unwrap() == "medium".to_string() && adap_item.mime_type.clone().unwrap().contains("mp4") {
+                        mid_url = adap_item.url.clone();
+                        mid_w = adap_item.width;
+                        mid_h = adap_item.height;
+                    }
+                    if adap_item.quality.unwrap().starts_with("hd") && adap_item.mime_type.unwrap().contains("mp4") {
+                        hd_url = adap_item.url;
+                        hd_w = adap_item.width;
+                        hd_h = adap_item.height;
                     }
                 }
-                Err(e) => println!("{}", e),
             }
         }
-        None => {}
-    }
+        let mut ytb_dl_info = YtbDownloadDTO::default();
 
+        ytb_dl_info.set_ytb_high_url(hd_url);
+        ytb_dl_info.set_ytb_high_width(hd_w);
+        ytb_dl_info.set_ytb_high_height(hd_h);
+
+        ytb_dl_info.set_ytb_middle_url(mid_url);
+        ytb_dl_info.set_ytb_mid_width(mid_w);
+        ytb_dl_info.set_ytb_mid_height(mid_h);
+        ytb_dl_info.set_ytb_id(Some(v_id.clone()));
+        ytb_dl_info.set_is_download(Some(0));
+        ytb_dl_info.set_created_at(Some(DateTimeNative::now()));
+        ytb_dl_info.set_file_name(Some("".to_string()));
+        ytb_dl_info.set_file_path(Some("".to_string()));
+        // 保存下载的视频地址
+        let ytb_dl_save = ytb_dl_service.save_info(ytb_dl_info).await;
+
+        match ytb_dl_save {
+            Ok(_) => (),
+            Err(e) => println!("ytb_dl_save error:{:?}", e),
+        }
+
+        match ytb_play_info.video_details {
+            Some(video_detail) => {
+                ytb_info.set_ytb_channel(video_detail.channel_id);
+                ytb_info.set_ytb_duration(video_detail.length_seconds);
+                ytb_info.set_ytb_author(video_detail.author);
+                ytb_info.set_ytb_tips(video_detail.short_description);
+                // 更新下载的视频地址
+                let ytb_info_save = ytb_service.save_info(ytb_info).await;
+                match ytb_info_save {
+                    Ok(_) => (),
+                    Err(e) => println!("ytb_info_save error:{:?}", e),
+                }
+            }
+            None => {}
+        }
+    }
     Ok(())
 }
 
@@ -163,6 +144,39 @@ pub async fn download_ytb_video_async() -> Result<()> {
     Ok(())
 }
 
+///************************************************************************************************
+///
+/// 多线程下载 读取youtube 视频地址下载并更新数据集 filename和filepath
+///
+///  */
+
+pub async fn download_ytb_video_thread() -> Result<()> {
+    let mut tasks_down = vec![];
+
+    for i in 0..5 {
+        let t = spawn(async move {
+            let ytb_dl_service = APPLICATION_CONTEXT.get::<YTBDLService>();
+            //获得未爬成功的视频
+            loop {
+                let mut ytb_info = ytb_dl_service.get_by_ytb_no_download_list_1(1).await.expect("get no download video erorr");
+                let mid_url = ytb_info.ytb_middle_url().clone().unwrap();
+                let dl_file_name = format!("{}.mp4", ytb_info.ytb_id().clone().unwrap());
+                let download_result = download(mid_url, ytb_info.ytb_id().clone().unwrap()).await.expect("download video erorr");
+                ytb_info.set_file_name(Some(dl_file_name.clone()));
+                ytb_info.set_file_path(Some(download_result));
+                ytb_info.set_is_download(Some(1));
+                ytb_dl_service.save_info(ytb_info).await;
+            }
+        });
+        tasks_down.push(t);
+    }
+
+    for task in tasks_down {
+        let () = task.await.expect("mutil thread tasks failed to download videos");
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod ytb_crawler_test {
     use super::*;
@@ -177,7 +191,7 @@ mod ytb_crawler_test {
 
     #[test]
     fn it_works() {
-        aw!(get_ytb_info("rPAHwWfHcnE").await);
+        aw!(get_ytb_info().await);
     }
 
     #[tokio::test]

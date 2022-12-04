@@ -159,6 +159,16 @@ where
         return Ok(result);
     }
     /**
+     * ytb_id no download five
+     */
+    async fn get_by_ytb_no_download_list_1(&self, status: u8) -> Result<Dto> {
+        let rb = APPLICATION_CONTEXT.get::<Rbatis>();
+        let wrapper = rb.new_wrapper().ne("is_download", status).limit(1);
+        let detail: Entity = rb.fetch_by_wrapper(wrapper).await?;
+        let vo = Dto::from(detail);
+        return Ok(vo);
+    }
+    /**
      * ytb_id
      */
     async fn get_by_ytb_status_times(&self, status: u8, times:u8) -> Result<Dto> {

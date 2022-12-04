@@ -85,10 +85,7 @@ pub async fn start_crawler() -> Result<()> {
 }
 
 pub async fn start_get_ytb_info() -> Result<()> {
-    let list = vec!["Mbz7wvVdT2E","l2SxVulhgmA","204klcjBia0","_7DbZ4PC90g","j_FZdnts2fE"];
-    for item in list{
-        let result  = get_ytb_info(item).await?;
-    }
+    let result  = get_ytb_info().await?;
     Ok(())
 }
 
