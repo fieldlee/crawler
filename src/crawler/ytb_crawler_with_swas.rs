@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use tinyjson::JsonValue;
 use crate::utils::error::Result;
 use reqwest::header::HeaderMap;
-/// Data related to youtube channel
 
 #[allow(dead_code)]
 #[derive(Debug)]
